@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use anyhow::anyhow;
 use git2::Signature;
-use jni::JNIEnv;
+use jni::EnvUnowned;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::{jboolean, jint, jobject, jstring};
 
@@ -73,14 +73,11 @@ impl Display for Error {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_initLib<'local>(
-    mut env: JNIEnv<'local>,
+    _env: EnvUnowned<'local>,
     _class: JClass<'local>,
     home_path: JString<'local>,
 ) -> jint {
-    let home_path: String = env
-        .get_string(&home_path)
-        .expect("Couldn't get java string!")
-        .into();
+    let home_path = home_path.to_string();
 
     libgit2::init_lib(home_path);
 
@@ -102,14 +99,11 @@ pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_initLib<
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_createRepoLib<'local>(
-    mut env: JNIEnv<'local>,
+    _env: EnvUnowned<'local>,
     _class: JClass<'local>,
     repo_path: JString<'local>,
 ) -> jint {
-    let repo_path: String = env
-        .get_string(&repo_path)
-        .expect("Couldn't get java string!")
-        .into();
+    let repo_path: String = repo_path.to_string();
 
     unwrap_or_log!(libgit2::create_repo(&repo_path), "create_repo");
 
@@ -117,14 +111,11 @@ pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_createRe
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_openRepoLib<'local>(
-    mut env: JNIEnv<'local>,
+    _env: EnvUnowned<'local>,
     _class: JClass<'local>,
     repo_path: JString<'local>,
 ) -> jint {
-    let repo_path: String = env
-        .get_string(&repo_path)
-        .expect("Couldn't get java string!")
-        .into();
+    let repo_path: String = repo_path.to_string();
 
     unwrap_or_log!(libgit2::open_repo(&repo_path), "open_repo");
 
@@ -285,15 +276,15 @@ mod callback {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_cloneRepoLib<'local>(
-    mut env: JNIEnv<'local>,
+    mut env: EnvUnowned<'local>,
     _class: JClass<'local>,
     repo_path: JString<'local>,
     remote_url: JString<'local>,
     cred: JString<'local>,
     progress_callback: JObject<'local>,
 ) -> jint {
-    let repo_path: String = env.get_string(&repo_path).unwrap().into();
-    let remote_url: String = env.get_string(&remote_url).unwrap().into();
+    let repo_path: String = repo_path.to_string();
+    let remote_url: String = remote_url.to_string();
 
     let cred = match Cred::from_jni(&mut env, &cred) {
         Ok(cred) => cred,
@@ -314,7 +305,7 @@ pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_cloneRep
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_lastCommitLib(
-    env: JNIEnv,
+    env: EnvUnowned,
     _class: JClass,
 ) -> jstring {
     let commit = match libgit2::last_commit() {
@@ -322,6 +313,9 @@ pub extern "C" fn Java_io_github_wiiznokes_gitnote_manager_GitManagerKt_lastComm
         None => return std::ptr::null_mut(),
     };
 
+    env.with_env(|env| {
+        env.new_string(commit)
+    })
     env.new_string(commit)
         .expect("Couldn't create Java string!")
         .into_raw()

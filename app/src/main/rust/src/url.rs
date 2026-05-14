@@ -42,19 +42,30 @@ mod test {
 
     fn test() {
         let url = parse_url("ssh://username@host:5555/dir/repo.git").unwrap();
-
         assert_eq!(&url.kind, &UrlKind::Ssh);
 
         let url = parse_url("https://github.com/wiiznokes/gitnote.git").unwrap();
-
         assert_eq!(&url.kind, &UrlKind::Https);
 
         let url = parse_url("git@github.com:wiiznokes/gitnote.git").unwrap();
-
         assert_eq!(&url.kind, &UrlKind::Ssh);
 
         let url = parse_url("git@git.sr.ht:~user/notes").unwrap();
+        assert_eq!(&url.kind, &UrlKind::Ssh);
 
+        let url = parse_url("ssh://gt@10.10.0.5:222/gt/gt.git").unwrap();
+        assert_eq!(&url.kind, &UrlKind::Ssh);
+        
+        let url = parse_url("gt@git.bnet.hu:222/gt/gt.git").unwrap();
+        assert_eq!(&url.kind, &UrlKind::Ssh);
+        
+        let url = parse_url("ssh://gt@git.bnet.hu:222/gt/gt.git").unwrap();
+        assert_eq!(&url.kind, &UrlKind::Ssh);
+        
+        let url = parse_url("gt@git.bnet.hu:/gt/gt.git").unwrap();
+        assert_eq!(&url.kind, &UrlKind::Ssh);
+        
+        let url = parse_url("gt@git.bnet.hu:repos/gt.git").unwrap();
         assert_eq!(&url.kind, &UrlKind::Ssh);
     }
 }
